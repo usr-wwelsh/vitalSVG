@@ -1,0 +1,18 @@
+# VitalSVG Configuration
+# Copy this to config.yaml and edit as needed.
+# All values can be overridden with VITALSVG_ environment variables.
+
+port: 8080
+poll_interval: 30s
+data_dir: ./data
+
+docker:
+  enabled: true
+  socket: /var/run/docker.sock
+
+proxmox:
+  enabled: false
+  host: "192.168.1.100:8006"     # your Proxmox host:port
+  token_id: "user@pam!vitalsvg"  # API token ID
+  token_secret: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  skip_tls_verify: true          # set to true for self-signed certs

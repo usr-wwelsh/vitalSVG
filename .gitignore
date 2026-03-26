@@ -1,0 +1,13 @@
+# Binary
+vitalsvg
+
+# Data
+data/
+
+# Config with secrets
+config.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp

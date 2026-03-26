@@ -1,0 +1,19 @@
+services:
+  vitalsvg:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - vitalsvg-data:/data
+    environment:
+      - VITALSVG_DATA_DIR=/data
+      # Uncomment and fill in for Proxmox monitoring
+      # - VITALSVG_PROXMOX_HOST=192.168.1.100:8006
+      # - VITALSVG_PROXMOX_TOKEN_ID=root@pam!vitalsvg
+      # - VITALSVG_PROXMOX_TOKEN_SECRET=your-secret-here
+      # - VITALSVG_PROXMOX_SKIP_TLS=true
+    restart: unless-stopped
+
+volumes:
+  vitalsvg-data:

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="{{.Width}}" height="{{.Height}}" role="img" aria-label="{{.Label}} trend">
+  <title>{{.Label}} trend</title>
+  <rect width="{{.Width}}" height="{{.Height}}" rx="3" fill="#555"/>
+  <text x="4" y="10" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="9" fill="#fff" fill-opacity=".8">{{.Label}}</text>
+  {{if .Points}}
+  <polyline fill="none" stroke="{{.Color}}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="{{.Points}}"/>
+  <polyline fill="{{.Color}}" fill-opacity=".15" stroke="none" points="{{.AreaPoints}}"/>
+  {{else}}
+  <text x="{{.MidX}}" y="{{.MidY}}" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="9" fill="#fff" fill-opacity=".5">no data</text>
+  {{end}}
+</svg>
