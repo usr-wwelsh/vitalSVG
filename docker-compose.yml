@@ -1,8 +1,8 @@
 services:
   vitalsvg:
     build: .
-    expose:
-      - "8080"
+    ports:
+      - "9100:9100"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - vitalsvg-data:/data
@@ -13,6 +13,7 @@ services:
       # - VITALSVG_PROXMOX_TOKEN_ID=root@pam!vitalsvg
       # - VITALSVG_PROXMOX_TOKEN_SECRET=your-secret-here
       # - VITALSVG_PROXMOX_SKIP_TLS=true
+      - VITALSVG_PORT=9100
     restart: unless-stopped
 
 volumes:
