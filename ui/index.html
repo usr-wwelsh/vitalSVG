@@ -233,6 +233,32 @@
     }
 
     .refresh-btn:hover { background: #30363d; }
+
+    .master-badge-section {
+      margin-bottom: 1rem;
+      padding: 1rem 1.25rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+    }
+
+    .master-badge-section .badge-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .master-badge-section .badge-header h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+
+    .master-badge-section img {
+      max-width: 100%;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -281,10 +307,34 @@
         }
 
         let html = '';
+        const sourceKeys = Object.keys(groups);
+        if (sourceKeys.length > 1) {
+          html += `
+            <div class="master-badge-section" style="margin-bottom: 1.5rem;">
+              <div class="badge-header">
+                <h3>All Resources</h3>
+                <div>
+                  <button class="copy-btn" onclick="copyText(this, '${BASE}/badge/master.svg')">Copy URL</button>
+                  <button class="copy-btn" onclick="copyText(this, '![overview](${BASE}/badge/master.svg)')">Copy MD</button>
+                </div>
+              </div>
+              <img src="${BASE}/badge/master.svg" alt="master overview">
+            </div>`;
+        }
         for (const [source, names] of Object.entries(groups)) {
           html += `
             <div class="source-group">
-              <h2><span class="dot"></span>${source}</h2>`;
+              <h2><span class="dot"></span>${source}</h2>
+              <div class="master-badge-section">
+                <div class="badge-header">
+                  <h3>Overview</h3>
+                  <div>
+                    <button class="copy-btn" onclick="copyText(this, '${BASE}/badge/${source}/master.svg')">Copy URL</button>
+                    <button class="copy-btn" onclick="copyText(this, '![${source} overview](${BASE}/badge/${source}/master.svg)')">Copy MD</button>
+                  </div>
+                </div>
+                <img src="${BASE}/badge/${source}/master.svg" alt="${source} master overview">
+              </div>`;
 
           for (const name of names) {
             const id = `${source}-${name}`.replace(/[^a-zA-Z0-9-]/g, '_');

@@ -15,7 +15,13 @@ var templateFS embed.FS
 var templates *template.Template
 
 func init() {
-	templates = template.Must(template.ParseFS(templateFS, "templates/*.tmpl"))
+	funcMap := template.FuncMap{
+		"add":  func(a, b int) int { return a + b },
+		"mul":  func(a, b int) int { return a * b },
+		"even": func(i int) bool { return i%2 == 0 },
+		"last": func(i, length int) bool { return i >= length-1 },
+	}
+	templates = template.Must(template.New("").Funcs(funcMap).ParseFS(templateFS, "templates/*.tmpl"))
 }
 
 // StatusData holds the template data for a status/metric badge.
@@ -208,6 +214,137 @@ func RenderSparkline(w io.Writer, label string, points []DataPoint) error {
 	}
 
 	return templates.ExecuteTemplate(w, "sparkline.svg.tmpl", data)
+}
+
+// MasterRow holds data for one container row in the master badge.
+type MasterRow struct {
+	Name       string
+	Status     string
+	StatusColor string
+	Uptime     string
+	CPUPct     string
+	CPUColor   string
+	CPUPoints  string
+	CPUArea    string
+	RAMPct     string
+	RAMColor   string
+	RAMPoints  string
+	RAMArea    string
+}
+
+// MasterData holds the template data for the master overview badge.
+type MasterData struct {
+	Title  string
+	Source string
+	Width  int
+	Height int
+	Rows   []MasterRow
+}
+
+const (
+	masterWidth    = 480
+	masterRowH     = 28
+	masterHeaderH  = 48 // 28px title + 20px column headers
+	masterPadBot   = 6
+	masterChartW   = 80.0
+	masterChartH   = 14.0
+)
+
+// buildMiniSparkline generates SVG polyline points for a mini inline sparkline.
+func buildMiniSparkline(points []DataPoint, x0, y0, w, h float64) (line, area string) {
+	if len(points) < 2 {
+		return "", ""
+	}
+
+	minVal, maxVal := points[0].Value, points[0].Value
+	for _, p := range points[1:] {
+		if p.Value < minVal {
+			minVal = p.Value
+		}
+		if p.Value > maxVal {
+			maxVal = p.Value
+		}
+	}
+
+	valRange := maxVal - minVal
+	if valRange == 0 {
+		valRange = 1
+	}
+
+	var linePts, areaPts []string
+	for i, p := range points {
+		px := x0 + (float64(i)/float64(len(points)-1))*w
+		py := y0 + h - ((p.Value-minVal)/valRange)*h
+		pt := fmt.Sprintf("%.1f,%.1f", px, py)
+		linePts = append(linePts, pt)
+		areaPts = append(areaPts, pt)
+	}
+
+	areaPts = append(areaPts, fmt.Sprintf("%.1f,%.1f", x0+w, y0+h))
+	areaPts = append(areaPts, fmt.Sprintf("%.1f,%.1f", x0, y0+h))
+
+	return strings.Join(linePts, " "), strings.Join(areaPts, " ")
+}
+
+// NewMasterRow creates a MasterRow from raw metric data.
+func NewMasterRow(name string, status int, uptime, cpuPct, ramPct float64, cpuSeries, ramSeries []DataPoint) MasterRow {
+	row := MasterRow{Name: name}
+
+	// Status
+	switch status {
+	case 0:
+		row.Status = "offline"
+		row.StatusColor = ColorRed
+	case 1:
+		row.Status = "online"
+		row.StatusColor = ColorGreen
+	case 2:
+		row.Status = "degraded"
+		row.StatusColor = ColorYellow
+	default:
+		row.Status = "unknown"
+		row.StatusColor = ColorGray
+	}
+
+	// Uptime
+	row.Uptime = formatUptime(uptime)
+
+	// CPU
+	row.CPUPct = fmt.Sprintf("%.1f%%", cpuPct)
+	row.CPUColor = MetricColor(cpuPct)
+
+	// RAM
+	row.RAMPct = fmt.Sprintf("%.1f%%", ramPct)
+	row.RAMColor = MetricColor(ramPct)
+
+	return row
+}
+
+// RenderMaster writes the master overview badge SVG to w.
+func RenderMaster(w io.Writer, title, source string, rows []MasterRow) error {
+	height := masterHeaderH + len(rows)*masterRowH + masterPadBot
+
+	data := MasterData{
+		Title:  title,
+		Source: source,
+		Width:  masterWidth,
+		Height: height,
+		Rows:   rows,
+	}
+
+	return templates.ExecuteTemplate(w, "master.svg.tmpl", data)
+}
+
+// BuildMasterRowSparklines fills in the sparkline points for a row at the given index.
+func BuildMasterRowSparklines(row *MasterRow, index int, cpuSeries, ramSeries []DataPoint) {
+	rowY := float64(masterHeaderH + index*masterRowH)
+	chartY := rowY + 7
+
+	// CPU sparkline at x=278 (after cpu % text)
+	row.CPUPoints, row.CPUArea = buildMiniSparkline(cpuSeries, 278, chartY, masterChartW, masterChartH)
+
+	// RAM sparkline at x=418 (after ram % text)
+	row.RAMPoints, row.RAMArea = buildMiniSparkline(ramSeries, 418, chartY, masterChartW, masterChartH)
 }
 
 // RenderUnknown writes a gray "unknown" badge SVG to w.

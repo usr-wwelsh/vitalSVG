@@ -156,6 +156,60 @@ func (s *Store) ListResources() ([]Resource, error) {
 	return result, rows.Err()
 }
 
+// QueryLatestAll returns the most recent value of a given metric for every resource.
+func (s *Store) QueryLatestAll(metric string) ([]Metric, error) {
+	rows, err := s.db.Query(`
+		SELECT m.source, m.name, m.metric, m.value, m.ts
+		FROM metrics m
+		INNER JOIN (
+			SELECT source, name, MAX(ts) AS max_ts
+			FROM metrics
+			WHERE metric = ?
+			GROUP BY source, name
+		) latest ON m.source = latest.source AND m.name = latest.name AND m.ts = latest.max_ts
+		WHERE m.metric = ?
+	`, metric, metric)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []Metric
+	for rows.Next() {
+		var m Metric
+		if err := rows.Scan(&m.Source, &m.Name, &m.Metric, &m.Value, &m.Ts); err != nil {
+			return nil, err
+		}
+		result = append(result, m)
+	}
+	return result, rows.Err()
+}
+
+// QuerySeriesAll returns the last 24h of a metric for every resource, keyed by "source/name".
+func (s *Store) QuerySeriesAll(metric string) (map[string][]Metric, error) {
+	cutoff := time.Now().Unix() - 86400
+
+	rows, err := s.db.Query(
+		"SELECT source, name, metric, value, ts FROM metrics WHERE metric = ? AND ts > ? ORDER BY source, name, ts ASC",
+		metric, cutoff,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]Metric)
+	for rows.Next() {
+		var m Metric
+		if err := rows.Scan(&m.Source, &m.Name, &m.Metric, &m.Value, &m.Ts); err != nil {
+			return nil, err
+		}
+		key := m.Source + "/" + m.Name
+		result[key] = append(result[key], m)
+	}
+	return result, rows.Err()
+}
+
 // Prune deletes metrics older than 24 hours.
 func (s *Store) Prune() error {
 	cutoff := time.Now().Unix() - 86400

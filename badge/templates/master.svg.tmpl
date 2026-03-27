@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="{{.Width}}" height="{{.Height}}" role="img" aria-label="{{.Title}}">
+  <title>{{.Title}}</title>
+  <defs>
+    <linearGradient id="hg" x2="0" y2="100%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".07"/>
+      <stop offset="1" stop-opacity=".07"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="{{.Width}}" height="{{.Height}}" rx="4" fill="#1b1f24"/>
+  <rect width="{{.Width}}" height="{{.Height}}" rx="4" fill="url(#hg)"/>
+
+  <!-- header -->
+  <rect width="{{.Width}}" height="28" rx="4" fill="#272c33"/>
+  <rect y="20" width="{{.Width}}" height="8" fill="#272c33"/>
+  <line x1="0" y1="28" x2="{{.Width}}" y2="28" stroke="#383e47" stroke-width="1"/>
+  <text x="10" y="18" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" font-weight="bold" fill="#e6edf3">{{.Title}}</text>
+  {{if .Source}}<text x="{{.Width}}" y="18" text-anchor="end" dx="-10" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="9" fill="#8b949e">{{.Source}}</text>{{end}}
+
+  <!-- column headers -->
+  {{$colY := 28}}
+  <rect y="28" width="{{.Width}}" height="20" fill="#22272e"/>
+  <line x1="0" y1="48" x2="{{.Width}}" y2="48" stroke="#383e47" stroke-width="0.5"/>
+  <text x="10" y="42" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="8.5" fill="#8b949e" font-weight="600">NAME</text>
+  <text x="110" y="42" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="8.5" fill="#8b949e" font-weight="600">STATUS</text>
+  <text x="170" y="42" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="8.5" fill="#8b949e" font-weight="600">UPTIME</text>
+  <text x="230" y="42" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="8.5" fill="#8b949e" font-weight="600">CPU</text>
+  <text x="374" y="42" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="8.5" fill="#8b949e" font-weight="600">RAM</text>
+
+  <!-- rows -->
+  {{range $i, $row := .Rows}}
+  {{$y := (add 48 (mul $i 28))}}
+  {{$textY := (add $y 18)}}
+
+  {{if even $i}}<rect y="{{$y}}" width="480" height="28" fill="#1b1f24"/>{{else}}<rect y="{{$y}}" width="480" height="28" fill="#222830"/>{{end}}
+  {{if not (last $i (len $.Rows))}}<line x1="8" y1="{{add $y 28}}" x2="472" y2="{{add $y 28}}" stroke="#30363d" stroke-width="0.5"/>{{end}}
+
+  <!-- name -->
+  <text x="10" y="{{$textY}}" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="10" fill="#e6edf3" font-weight="600">{{$row.Name}}</text>
+
+  <!-- status dot + text -->
+  <circle cx="114" cy="{{add $y 14}}" r="3.5" fill="{{$row.StatusColor}}"/>
+  <text x="122" y="{{$textY}}" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="9" fill="{{$row.StatusColor}}">{{$row.Status}}</text>
+
+  <!-- uptime -->
+  <text x="170" y="{{$textY}}" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="9" fill="#8b949e">{{$row.Uptime}}</text>
+
+  <!-- cpu pct -->
+  <text x="230" y="{{$textY}}" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="9" fill="{{$row.CPUColor}}">{{$row.CPUPct}}</text>
+
+  <!-- cpu sparkline -->
+  {{if $row.CPUPoints}}
+  <polyline fill="none" stroke="{{$row.CPUColor}}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" points="{{$row.CPUPoints}}"/>
+  <polyline fill="{{$row.CPUColor}}" fill-opacity=".15" stroke="none" points="{{$row.CPUArea}}"/>
+  {{end}}
+
+  <!-- ram pct -->
+  <text x="374" y="{{$textY}}" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="9" fill="{{$row.RAMColor}}">{{$row.RAMPct}}</text>
+
+  <!-- ram sparkline -->
+  {{if $row.RAMPoints}}
+  <polyline fill="none" stroke="{{$row.RAMColor}}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" points="{{$row.RAMPoints}}"/>
+  <polyline fill="{{$row.RAMColor}}" fill-opacity=".15" stroke="none" points="{{$row.RAMArea}}"/>
+  {{end}}
+
+  {{end}}
+</svg>
