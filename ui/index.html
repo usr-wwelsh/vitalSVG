@@ -279,6 +279,7 @@
 
   <script>
     const BASE = window.location.origin;
+    const REPO = 'https://github.com/usr-wwelsh/vitalSVG';
     const BADGE_TYPES = ['status', 'cpu', 'ram', 'uptime'];
 
     async function loadResources() {
@@ -315,7 +316,7 @@
                 <h3>All Resources</h3>
                 <div>
                   <button class="copy-btn" onclick="copyText(this, '${BASE}/badge/master.svg')">Copy URL</button>
-                  <button class="copy-btn" onclick="copyText(this, '![overview](${BASE}/badge/master.svg)')">Copy MD</button>
+                  <button class="copy-btn" onclick="copyText(this, '[![overview](${BASE}/badge/master.svg)](${REPO})')">Copy MD</button>
                 </div>
               </div>
               <img src="${BASE}/badge/master.svg" alt="master overview">
@@ -330,7 +331,7 @@
                   <h3>Overview</h3>
                   <div>
                     <button class="copy-btn" onclick="copyText(this, '${BASE}/badge/${source}/master.svg')">Copy URL</button>
-                    <button class="copy-btn" onclick="copyText(this, '![${source} overview](${BASE}/badge/${source}/master.svg)')">Copy MD</button>
+                    <button class="copy-btn" onclick="copyText(this, '[![${source} overview](${BASE}/badge/${source}/master.svg)](${REPO})')">Copy MD</button>
                   </div>
                 </div>
                 <img src="${BASE}/badge/${source}/master.svg" alt="${source} master overview">
@@ -363,7 +364,7 @@
                     <span class="endpoint-label">${t}</span>
                     <span class="endpoint-url">${url}</span>
                     <button class="copy-btn" onclick="copyText(this, '${url}')">Copy URL</button>
-                    <button class="copy-btn" onclick="copyText(this, '![${name} ${t}](${url})')">Copy MD</button>
+                    <button class="copy-btn" onclick="copyText(this, '[![${name} ${t}](${url})](${REPO})')">Copy MD</button>
                   </div>`;
             }
 
@@ -375,15 +376,15 @@
                     <span class="endpoint-label">${metric} trend</span>
                     <span class="endpoint-url">${url}</span>
                     <button class="copy-btn" onclick="copyText(this, '${url}')">Copy URL</button>
-                    <button class="copy-btn" onclick="copyText(this, '![${name} ${metric} trend](${url})')">Copy MD</button>
+                    <button class="copy-btn" onclick="copyText(this, '[![${name} ${metric} trend](${url})](${REPO})')">Copy MD</button>
                   </div>`;
             }
 
             // Full markdown snippet
             const mdLines = BADGE_TYPES.map(t =>
-              `![${name} ${t}](${BASE}/badge/${source}/${name}/${t}.svg)`
+              `[![${name} ${t}](${BASE}/badge/${source}/${name}/${t}.svg)](${REPO})`
             ).join(' ');
-            const mdAll = mdLines + `\n![${name} cpu trend](${BASE}/badge/${source}/${name}/sparkline.svg?metric=cpu) ![${name} ram trend](${BASE}/badge/${source}/${name}/sparkline.svg?metric=ram)`;
+            const mdAll = mdLines + `\n[![${name} cpu trend](${BASE}/badge/${source}/${name}/sparkline.svg?metric=cpu)](${REPO}) [![${name} ram trend](${BASE}/badge/${source}/${name}/sparkline.svg?metric=ram)](${REPO})`;
 
             html += `
                   <div class="copy-section">
