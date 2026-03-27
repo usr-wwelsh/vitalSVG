@@ -55,8 +55,13 @@ func (d *Docker) Collect() ([]Metric, error) {
 		}
 		metrics = append(metrics, Metric{Source: "docker", Name: name, Kind: "status", Value: statusVal, Time: now})
 
-		// Only fetch stats for running containers
+		// Offline containers get zero metrics
 		if c.State != "running" {
+			metrics = append(metrics, Metric{Source: "docker", Name: name, Kind: "cpu", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "docker", Name: name, Kind: "ram", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "docker", Name: name, Kind: "ram_used", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "docker", Name: name, Kind: "ram_limit", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "docker", Name: name, Kind: "uptime", Value: 0, Time: now})
 			continue
 		}
 
@@ -147,7 +152,7 @@ type memoryStats struct {
 }
 
 func (d *Docker) listContainers() ([]containerListEntry, error) {
-	resp, err := d.client.Get("http://localhost/containers/json")
+	resp, err := d.client.Get("http://localhost/containers/json?all=true")
 	if err != nil {
 		return nil, err
 	}

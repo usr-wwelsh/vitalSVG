@@ -96,6 +96,14 @@ func (s *Server) handleBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the resource is offline so we can force red on all badges
+	isOffline := false
+	if badgeType != "status" {
+		if sm, _ := s.store.QueryLatest(source, name, "status"); sm != nil && int(sm.Value) == 0 {
+			isOffline = true
+		}
+	}
+
 	switch badgeType {
 	case "status":
 		status := "unknown"
@@ -110,20 +118,36 @@ func (s *Server) handleBadge(w http.ResponseWriter, r *http.Request) {
 		badge.RenderStatus(w, label, status)
 
 	case "cpu":
-		badge.RenderMetric(w, label+" cpu", m.Value, "%")
+		if isOffline {
+			badge.RenderMetricOffline(w, label+" cpu", m.Value, "%")
+		} else {
+			badge.RenderMetric(w, label+" cpu", m.Value, "%")
+		}
 
 	case "ram":
 		// Try to get raw usage bytes for a richer display
 		usedM, _ := s.store.QueryLatest(source, name, "ram_used")
 		limitM, _ := s.store.QueryLatest(source, name, "ram_limit")
-		if usedM != nil && limitM != nil {
-			badge.RenderRAM(w, label+" ram", m.Value, usedM.Value, limitM.Value)
+		if isOffline {
+			if usedM != nil && limitM != nil {
+				badge.RenderRAMOffline(w, label+" ram", m.Value, usedM.Value, limitM.Value)
+			} else {
+				badge.RenderMetricOffline(w, label+" ram", m.Value, "%")
+			}
 		} else {
-			badge.RenderMetric(w, label+" ram", m.Value, "%")
+			if usedM != nil && limitM != nil {
+				badge.RenderRAM(w, label+" ram", m.Value, usedM.Value, limitM.Value)
+			} else {
+				badge.RenderMetric(w, label+" ram", m.Value, "%")
+			}
 		}
 
 	case "uptime":
-		badge.RenderMetric(w, label, m.Value, "uptime")
+		if isOffline {
+			badge.RenderMetricOffline(w, label, m.Value, "uptime")
+		} else {
+			badge.RenderMetric(w, label, m.Value, "uptime")
+		}
 	}
 }
 

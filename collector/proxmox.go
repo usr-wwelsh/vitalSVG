@@ -61,8 +61,11 @@ func (p *Proxmox) Collect() ([]Metric, error) {
 		}
 		metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "status", Value: statusVal, Time: now})
 
-		// Only report detailed metrics for running resources
+		// Offline resources get zero metrics
 		if r.Status != "running" {
+			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "cpu", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "ram", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "uptime", Value: 0, Time: now})
 			continue
 		}
 

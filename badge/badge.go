@@ -133,6 +133,15 @@ func RenderStatus(w io.Writer, label, status string) error {
 
 // RenderMetric writes a metric badge SVG to w.
 func RenderMetric(w io.Writer, label string, value float64, unit string) error {
+	return renderMetricWithColor(w, label, value, unit, "")
+}
+
+// RenderMetricOffline writes a metric badge SVG with red color to indicate offline.
+func RenderMetricOffline(w io.Writer, label string, value float64, unit string) error {
+	return renderMetricWithColor(w, label, value, unit, ColorRed)
+}
+
+func renderMetricWithColor(w io.Writer, label string, value float64, unit string, forceColor string) error {
 	var display string
 	var color string
 
@@ -146,6 +155,10 @@ func RenderMetric(w io.Writer, label string, value float64, unit string) error {
 	default:
 		display = fmt.Sprintf("%.1f %s", value, unit)
 		color = ColorGreen
+	}
+
+	if forceColor != "" {
+		color = forceColor
 	}
 
 	data := newStatusData(label, display, color)
@@ -317,6 +330,12 @@ func NewMasterRow(name string, status int, uptime, cpuPct, ramPct float64, cpuSe
 	row.RAMPct = fmt.Sprintf("%.1f%%", ramPct)
 	row.RAMColor = MetricColor(ramPct)
 
+	// Force red on all metrics when offline
+	if status == 0 {
+		row.CPUColor = ColorRed
+		row.RAMColor = ColorRed
+	}
+
 	return row
 }
 
@@ -358,6 +377,13 @@ func RenderRAM(w io.Writer, label string, pct, used, limit float64) error {
 	display := fmt.Sprintf("%.0f%% (%s)", pct, formatBytes(used))
 	color := MetricColor(pct)
 	data := newStatusData(label, display, color)
+	return templates.ExecuteTemplate(w, "metric.svg.tmpl", data)
+}
+
+// RenderRAMOffline writes a RAM badge with red color to indicate offline.
+func RenderRAMOffline(w io.Writer, label string, pct, used, limit float64) error {
+	display := fmt.Sprintf("%.0f%% (%s)", pct, formatBytes(used))
+	data := newStatusData(label, display, ColorRed)
 	return templates.ExecuteTemplate(w, "metric.svg.tmpl", data)
 }
 
