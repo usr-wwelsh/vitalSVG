@@ -319,8 +319,12 @@ func NewMasterRow(name string, status int, uptime, cpuPct, ramPct float64, cpuSe
 		row.StatusColor = ColorGray
 	}
 
-	// Uptime
-	row.Uptime = formatUptime(uptime)
+	// Uptime / Downtime
+	if status == 0 && uptime > 0 {
+		row.Uptime = formatUptime(uptime) + " down"
+	} else {
+		row.Uptime = formatUptime(uptime)
+	}
 
 	// CPU
 	row.CPUPct = fmt.Sprintf("%.1f%%", cpuPct)

@@ -144,7 +144,12 @@ func (s *Server) handleBadge(w http.ResponseWriter, r *http.Request) {
 
 	case "uptime":
 		if isOffline {
-			badge.RenderMetricOffline(w, label, m.Value, "uptime")
+			// Show how long the resource has been offline
+			downtime := 0.0
+			if lastOn, _ := s.store.QueryLastOnline(source, name); lastOn > 0 {
+				downtime = float64(time.Now().Unix() - lastOn)
+			}
+			badge.RenderMetricOffline(w, label+" down", downtime, "uptime")
 		} else {
 			badge.RenderMetric(w, label, m.Value, "uptime")
 		}
@@ -192,6 +197,13 @@ func (s *Server) handleMasterBadge(w http.ResponseWriter, r *http.Request) {
 		}
 		if m, _ := s.store.QueryLatest(res.Source, res.Name, "uptime"); m != nil {
 			uptime = m.Value
+		}
+
+		// For offline resources, show downtime instead of uptime
+		if statusVal == 0 {
+			if lastOn, _ := s.store.QueryLastOnline(res.Source, res.Name); lastOn > 0 {
+				uptime = float64(time.Now().Unix() - lastOn)
+			}
 		}
 
 		row := badge.NewMasterRow(res.Name, statusVal, uptime, cpuPct, ramPct, nil, nil)

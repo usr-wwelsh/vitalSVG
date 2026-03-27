@@ -210,6 +210,21 @@ func (s *Store) QuerySeriesAll(metric string) (map[string][]Metric, error) {
 	return result, rows.Err()
 }
 
+// QueryLastOnline returns the timestamp of the most recent status=1 (online) metric for a resource.
+// Returns 0 if the resource was never online in the stored history.
+func (s *Store) QueryLastOnline(source, name string) (int64, error) {
+	row := s.db.QueryRow(
+		"SELECT ts FROM metrics WHERE source = ? AND name = ? AND metric = 'status' AND value = 1 ORDER BY ts DESC LIMIT 1",
+		source, name,
+	)
+	var ts int64
+	err := row.Scan(&ts)
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+	return ts, err
+}
+
 // Prune deletes metrics older than 24 hours.
 func (s *Store) Prune() error {
 	cutoff := time.Now().Unix() - 86400
