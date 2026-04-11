@@ -24,6 +24,7 @@ func New(s *store.Store) *Server {
 	srv.mux.HandleFunc("GET /badge/{source}/master.svg", srv.handleMasterBadge)
 	srv.mux.HandleFunc("GET /badge/master.svg", srv.handleMasterBadge)
 	srv.mux.HandleFunc("GET /api/resources", srv.handleListResources)
+	srv.mux.HandleFunc("GET /api/containers", srv.handleAPIContainers)
 	srv.mux.HandleFunc("GET /health", srv.handleHealth)
 	srv.mux.HandleFunc("GET /", srv.handleUI)
 	return srv
@@ -250,6 +251,53 @@ func (s *Server) handleListResources(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resources)
+}
+
+// ContainerStatus is the JSON response for /api/containers, designed for Waybar scripts.
+type ContainerStatus struct {
+	Name   string  `json:"name"`
+	Online bool    `json:"online"`
+	CPU    float64 `json:"cpu"`
+	RAM    float64 `json:"ram"`
+}
+
+type ContainersResponse struct {
+	Containers []ContainerStatus `json:"containers"`
+}
+
+func (s *Server) handleAPIContainers(w http.ResponseWriter, r *http.Request) {
+	resources, err := s.store.ListResources()
+	if err != nil {
+		slog.Error("list resources", "err", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	response := ContainersResponse{
+		Containers: make([]ContainerStatus, 0, len(resources)),
+	}
+
+	for _, res := range resources {
+		cs := ContainerStatus{Name: res.Name}
+
+		if m, _ := s.store.QueryLatest(res.Source, res.Name, "status"); m != nil {
+			cs.Online = int(m.Value) == 1 || int(m.Value) == 2
+		}
+
+		if m, _ := s.store.QueryLatest(res.Source, res.Name, "cpu"); m != nil {
+			cs.CPU = m.Value
+		}
+
+		if m, _ := s.store.QueryLatest(res.Source, res.Name, "ram"); m != nil {
+			cs.RAM = m.Value
+		}
+
+		response.Containers = append(response.Containers, cs)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (s *Server) handleUI(w http.ResponseWriter, r *http.Request) {
