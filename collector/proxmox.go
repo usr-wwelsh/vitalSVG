@@ -65,6 +65,8 @@ func (p *Proxmox) Collect() ([]Metric, error) {
 		if r.Status != "running" {
 			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "cpu", Value: 0, Time: now})
 			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "ram", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "ram_used", Value: 0, Time: now})
+			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "ram_limit", Value: float64(r.MaxMem), Time: now})
 			metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "uptime", Value: 0, Time: now})
 			continue
 		}
@@ -82,6 +84,8 @@ func (p *Proxmox) Collect() ([]Metric, error) {
 			ramPct = (float64(r.Mem) / float64(r.MaxMem)) * 100
 		}
 		metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "ram", Value: ramPct, Time: now})
+		metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "ram_used", Value: float64(r.Mem), Time: now})
+		metrics = append(metrics, Metric{Source: "proxmox", Name: name, Kind: "ram_limit", Value: float64(r.MaxMem), Time: now})
 
 		// Uptime
 		if r.Uptime > 0 {

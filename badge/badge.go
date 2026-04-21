@@ -300,7 +300,7 @@ func buildMiniSparkline(points []DataPoint, x0, y0, w, h float64) (line, area st
 }
 
 // NewMasterRow creates a MasterRow from raw metric data.
-func NewMasterRow(name string, status int, uptime, cpuPct, ramPct float64, cpuSeries, ramSeries []DataPoint) MasterRow {
+func NewMasterRow(name string, status int, uptime, cpuPct, ramPct, ramUsed, ramLimit float64, cpuSeries, ramSeries []DataPoint) MasterRow {
 	row := MasterRow{Name: name}
 
 	// Status
@@ -331,7 +331,11 @@ func NewMasterRow(name string, status int, uptime, cpuPct, ramPct float64, cpuSe
 	row.CPUColor = MetricColor(cpuPct)
 
 	// RAM
-	row.RAMPct = fmt.Sprintf("%.1f%%", ramPct)
+	if ramLimit > 0 {
+		row.RAMPct = fmt.Sprintf("%s/%s", formatBytes(ramUsed), formatBytes(ramLimit))
+	} else {
+		row.RAMPct = fmt.Sprintf("%.1f%%", ramPct)
+	}
 	row.RAMColor = MetricColor(ramPct)
 
 	// Force red on all metrics when offline
@@ -376,9 +380,9 @@ func RenderUnknown(w io.Writer, label string) error {
 	return templates.ExecuteTemplate(w, "status.svg.tmpl", data)
 }
 
-// RenderRAM writes a RAM badge showing percentage and human-readable usage.
+// RenderRAM writes a RAM badge showing used/total GB.
 func RenderRAM(w io.Writer, label string, pct, used, limit float64) error {
-	display := fmt.Sprintf("%.0f%% (%s)", pct, formatBytes(used))
+	display := fmt.Sprintf("%s/%s", formatBytes(used), formatBytes(limit))
 	color := MetricColor(pct)
 	data := newStatusData(label, display, color)
 	return templates.ExecuteTemplate(w, "metric.svg.tmpl", data)
@@ -386,7 +390,7 @@ func RenderRAM(w io.Writer, label string, pct, used, limit float64) error {
 
 // RenderRAMOffline writes a RAM badge with red color to indicate offline.
 func RenderRAMOffline(w io.Writer, label string, pct, used, limit float64) error {
-	display := fmt.Sprintf("%.0f%% (%s)", pct, formatBytes(used))
+	display := fmt.Sprintf("%s/%s", formatBytes(used), formatBytes(limit))
 	data := newStatusData(label, display, ColorRed)
 	return templates.ExecuteTemplate(w, "metric.svg.tmpl", data)
 }

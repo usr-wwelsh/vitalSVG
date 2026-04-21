@@ -189,12 +189,18 @@ func (s *Server) handleMasterBadge(w http.ResponseWriter, r *http.Request) {
 		if m, _ := s.store.QueryLatest(res.Source, res.Name, "status"); m != nil {
 			statusVal = int(m.Value)
 		}
-		var cpuPct, ramPct, uptime float64
+		var cpuPct, ramPct, ramUsed, ramLimit, uptime float64
 		if m, _ := s.store.QueryLatest(res.Source, res.Name, "cpu"); m != nil {
 			cpuPct = m.Value
 		}
 		if m, _ := s.store.QueryLatest(res.Source, res.Name, "ram"); m != nil {
 			ramPct = m.Value
+		}
+		if m, _ := s.store.QueryLatest(res.Source, res.Name, "ram_used"); m != nil {
+			ramUsed = m.Value
+		}
+		if m, _ := s.store.QueryLatest(res.Source, res.Name, "ram_limit"); m != nil {
+			ramLimit = m.Value
 		}
 		if m, _ := s.store.QueryLatest(res.Source, res.Name, "uptime"); m != nil {
 			uptime = m.Value
@@ -207,7 +213,7 @@ func (s *Server) handleMasterBadge(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		row := badge.NewMasterRow(res.Name, statusVal, uptime, cpuPct, ramPct, nil, nil)
+		row := badge.NewMasterRow(res.Name, statusVal, uptime, cpuPct, ramPct, ramUsed, ramLimit, nil, nil)
 
 		// Sparkline series
 		key := res.Source + "/" + res.Name
