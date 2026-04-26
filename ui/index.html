@@ -259,6 +259,52 @@
       max-width: 100%;
       border-radius: 4px;
     }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #21262d;
+      text-align: center;
+    }
+
+    .built-with {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 999px;
+      color: #8b949e;
+      text-decoration: none;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .built-with:hover {
+      border-color: #58a6ff;
+      color: #c9d1d9;
+      transform: translateY(-1px);
+    }
+
+    .built-with .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #58a6ff, #3fb950);
+      box-shadow: 0 0 8px rgba(63, 185, 80, 0.6);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.2); }
+    }
+
+    .built-with strong {
+      color: #f0f6fc;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -276,6 +322,13 @@
   </div>
 
   <div id="content"></div>
+
+  <footer>
+    <a class="built-with" href="https://git.wwel.sh/vitalsvg" target="_blank" rel="noopener">
+      <span class="pulse"></span>
+      Built with <strong>vitalSVG</strong>
+    </a>
+  </footer>
 
   <script>
     const BASE = window.location.origin;
