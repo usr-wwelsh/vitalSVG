@@ -33,8 +33,8 @@
   {{$y := (add 48 (mul $i 28))}}
   {{$textY := (add $y 18)}}
 
-  {{if even $i}}<rect y="{{$y}}" width="480" height="28" fill="#1b1f24"/>{{else}}<rect y="{{$y}}" width="480" height="28" fill="#222830"/>{{end}}
-  {{if not (last $i (len $.Rows))}}<line x1="8" y1="{{add $y 28}}" x2="472" y2="{{add $y 28}}" stroke="#30363d" stroke-width="0.5"/>{{end}}
+  {{if even $i}}<rect y="{{$y}}" width="{{$.Width}}" height="28" fill="#1b1f24"/>{{else}}<rect y="{{$y}}" width="{{$.Width}}" height="28" fill="#222830"/>{{end}}
+  {{if not (last $i (len $.Rows))}}<line x1="8" y1="{{add $y 28}}" x2="{{add $.Width -8}}" y2="{{add $y 28}}" stroke="#30363d" stroke-width="0.5"/>{{end}}
 
   <!-- name -->
   <text x="10" y="{{$textY}}" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="10" fill="#e6edf3" font-weight="600">{{$row.Name}}</text>

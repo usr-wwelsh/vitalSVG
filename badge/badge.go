@@ -255,7 +255,7 @@ type MasterData struct {
 }
 
 const (
-	masterWidth    = 480
+	masterWidth    = 520
 	masterRowH     = 28
 	masterHeaderH  = 48 // 28px title + 20px column headers
 	masterPadBot   = 6
@@ -370,8 +370,8 @@ func BuildMasterRowSparklines(row *MasterRow, index int, cpuSeries, ramSeries []
 	// CPU sparkline at x=278 (after cpu % text)
 	row.CPUPoints, row.CPUArea = buildMiniSparkline(cpuSeries, 278, chartY, masterChartW, masterChartH)
 
-	// RAM sparkline at x=418 (after ram % text)
-	row.RAMPoints, row.RAMArea = buildMiniSparkline(ramSeries, 418, chartY, masterChartW, masterChartH)
+	// RAM sparkline at x=432 (after ram value text)
+	row.RAMPoints, row.RAMArea = buildMiniSparkline(ramSeries, 432, chartY, masterChartW, masterChartH)
 }
 
 // RenderUnknown writes a gray "unknown" badge SVG to w.
