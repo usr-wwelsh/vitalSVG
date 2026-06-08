@@ -260,6 +260,38 @@
       border-radius: 4px;
     }
 
+    .theme-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .theme-select {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    .theme-select:hover { border-color: #58a6ff; }
+
+    .theme-hint {
+      margin-top: 0.5rem;
+      color: #8b949e;
+      font-size: 0.75rem;
+    }
+
+    .theme-hint code {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      color: #7ee787;
+      background: #0d1117;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
     footer {
       margin-top: 3rem;
       padding-top: 1.5rem;
@@ -334,6 +366,40 @@
     const BASE = window.location.origin;
     const REPO = 'https://github.com/usr-wwelsh/vitalSVG';
     const BADGE_TYPES = ['status', 'cpu', 'ram', 'uptime'];
+    const THEMES = ['dark', 'light', 'dracula', 'nord', 'solarized', 'rosepine'];
+
+    // '' means the default (dark) theme — no query param needed. Persisted so the
+    // selection survives the 60s auto-refresh that rebuilds the DOM.
+    let selectedTheme = localStorage.getItem('vitalsvg-theme') || '';
+    if (selectedTheme && !THEMES.includes(selectedTheme)) selectedTheme = '';
+
+    function themedUrl(base) {
+      return selectedTheme ? `${base}?theme=${selectedTheme}` : base;
+    }
+
+    function themeSelect() {
+      const opts = THEMES.map((t, i) => {
+        const val = i === 0 ? '' : t;
+        return `<option value="${val}"${val === selectedTheme ? ' selected' : ''}>${t}</option>`;
+      }).join('');
+      return `<select class="theme-select" onchange="updateMaster(this)" title="Theme">${opts}</select>`;
+    }
+
+    function updateMaster(sel) {
+      selectedTheme = sel.value;
+      localStorage.setItem('vitalsvg-theme', selectedTheme);
+      document.querySelectorAll('.master-badge-section').forEach(section => {
+        section.querySelector('img').src = themedUrl(section.dataset.base);
+        section.querySelector('.theme-select').value = selectedTheme;
+      });
+    }
+
+    function copyMaster(btn, kind) {
+      const section = btn.closest('.master-badge-section');
+      const url = themedUrl(section.dataset.base);
+      const label = section.dataset.label;
+      copyText(btn, kind === 'md' ? `[![${label}](${url})](${REPO})` : url);
+    }
 
     async function loadResources() {
       const statusEl = document.getElementById('status');
@@ -364,30 +430,33 @@
         const sourceKeys = Object.keys(groups);
         if (sourceKeys.length > 1) {
           html += `
-            <div class="master-badge-section" style="margin-bottom: 1.5rem;">
+            <div class="master-badge-section" style="margin-bottom: 1.5rem;" data-base="${BASE}/badge/master.svg" data-label="overview">
               <div class="badge-header">
                 <h3>All Resources</h3>
-                <div>
-                  <button class="copy-btn" onclick="copyText(this, '${BASE}/badge/master.svg')">Copy URL</button>
-                  <button class="copy-btn" onclick="copyText(this, '[![overview](${BASE}/badge/master.svg)](${REPO})')">Copy MD</button>
+                <div class="theme-controls">
+                  ${themeSelect()}
+                  <button class="copy-btn" onclick="copyMaster(this, 'url')">Copy URL</button>
+                  <button class="copy-btn" onclick="copyMaster(this, 'md')">Copy MD</button>
                 </div>
               </div>
-              <img src="${BASE}/badge/master.svg" alt="master overview">
+              <img src="${themedUrl(`${BASE}/badge/master.svg`)}" alt="master overview">
+              <div class="theme-hint">Pick a theme, or add custom colors: <code>?bg=0d1117&amp;text=c9d1d9</code> — see the README.</div>
             </div>`;
         }
         for (const [source, names] of Object.entries(groups)) {
           html += `
             <div class="source-group">
               <h2><span class="dot"></span>${source}</h2>
-              <div class="master-badge-section">
+              <div class="master-badge-section" data-base="${BASE}/badge/${source}/master.svg" data-label="${source} overview">
                 <div class="badge-header">
                   <h3>Overview</h3>
-                  <div>
-                    <button class="copy-btn" onclick="copyText(this, '${BASE}/badge/${source}/master.svg')">Copy URL</button>
-                    <button class="copy-btn" onclick="copyText(this, '[![${source} overview](${BASE}/badge/${source}/master.svg)](${REPO})')">Copy MD</button>
+                  <div class="theme-controls">
+                    ${themeSelect()}
+                    <button class="copy-btn" onclick="copyMaster(this, 'url')">Copy URL</button>
+                    <button class="copy-btn" onclick="copyMaster(this, 'md')">Copy MD</button>
                   </div>
                 </div>
-                <img src="${BASE}/badge/${source}/master.svg" alt="${source} master overview">
+                <img src="${themedUrl(`${BASE}/badge/${source}/master.svg`)}" alt="${source} master overview">
               </div>`;
 
           for (const name of names) {

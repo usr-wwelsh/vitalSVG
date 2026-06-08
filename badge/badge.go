@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net/url"
 	"strings"
 	"text/template"
 )
@@ -245,17 +246,89 @@ type MasterRow struct {
 	RAMArea    string
 }
 
+// Theme holds the chrome colors for the master badge.
+type Theme struct {
+	Bg     string // page background
+	Header string // header/title bar
+	RowAlt string // alternating row + column-header band
+	Border string // separators
+	Text   string // primary text
+	Muted  string // secondary text
+}
+
+// Each theme carries a signature accent in Muted (column headers, source,
+// uptime) so the presets read as distinct rather than near-identical greys.
+var themes = map[string]Theme{
+	"dark":      {Bg: "#1b1f24", Header: "#272c33", RowAlt: "#222830", Border: "#383e47", Text: "#e6edf3", Muted: "#8b949e"},
+	"light":     {Bg: "#ffffff", Header: "#f0f3f6", RowAlt: "#f6f8fa", Border: "#d0d7de", Text: "#1f2328", Muted: "#57606a"},
+	"dracula":   {Bg: "#282a36", Header: "#383a4c", RowAlt: "#2f3142", Border: "#44475a", Text: "#f8f8f2", Muted: "#bd93f9"},
+	"nord":      {Bg: "#2e3440", Header: "#3b4252", RowAlt: "#353c4a", Border: "#434c5e", Text: "#eceff4", Muted: "#88c0d0"},
+	"solarized": {Bg: "#002b36", Header: "#073642", RowAlt: "#063540", Border: "#0a4654", Text: "#93a1a1", Muted: "#2aa198"},
+	"rosepine":  {Bg: "#191724", Header: "#26233a", RowAlt: "#211f30", Border: "#403d52", Text: "#e0def4", Muted: "#c4a7e7"},
+}
+
+// ParseTheme builds a Theme from URL query params: ?theme=<preset> selects a
+// preset, and individual params (bg, header, rowalt, border, text, muted)
+// override single colors with hex values (with or without a leading #).
+func ParseTheme(q url.Values) Theme {
+	t := themes["dark"]
+	if preset, ok := themes[q.Get("theme")]; ok {
+		t = preset
+	}
+	for param, field := range map[string]*string{
+		"bg": &t.Bg, "header": &t.Header, "rowalt": &t.RowAlt,
+		"border": &t.Border, "text": &t.Text, "muted": &t.Muted,
+	} {
+		if c := hexColor(q.Get(param)); c != "" {
+			*field = c
+		}
+	}
+	return t
+}
+
+// hexColor validates a 3- or 6-digit hex color and returns it with a leading #,
+// or "" if invalid. The leading # is optional in the input (it's a URL fragment).
+func hexColor(s string) string {
+	s = strings.TrimPrefix(s, "#")
+	if len(s) != 3 && len(s) != 6 {
+		return ""
+	}
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return ""
+		}
+	}
+	return "#" + s
+}
+
+// truncateName shortens a name with an ellipsis if it exceeds maxWidth (in the
+// estimateTextWidth scale used for 11px text).
+func truncateName(name string, maxWidth float64) string {
+	if float64(estimateTextWidth(name)) <= maxWidth {
+		return name
+	}
+	runes := []rune(name)
+	for len(runes) > 1 {
+		runes = runes[:len(runes)-1]
+		if float64(estimateTextWidth(string(runes)+"…")) <= maxWidth {
+			break
+		}
+	}
+	return string(runes) + "…"
+}
+
 // MasterData holds the template data for the master overview badge.
 type MasterData struct {
 	Title  string
 	Source string
 	Width  int
 	Height int
+	Theme  Theme
 	Rows   []MasterRow
 }
 
 const (
-	masterWidth    = 520
+	masterWidth    = 540
 	masterRowH     = 28
 	masterHeaderH  = 48 // 28px title + 20px column headers
 	masterPadBot   = 6
@@ -301,7 +374,9 @@ func buildMiniSparkline(points []DataPoint, x0, y0, w, h float64) (line, area st
 
 // NewMasterRow creates a MasterRow from raw metric data.
 func NewMasterRow(name string, status int, uptime, cpuPct, ramPct, ramUsed, ramLimit float64, cpuSeries, ramSeries []DataPoint) MasterRow {
-	row := MasterRow{Name: name}
+	// Budget is conservative: names render bold and often fall back to DejaVu
+	// Sans (wider than Verdana), so estimateTextWidth undershoots actual width.
+	row := MasterRow{Name: truncateName(name, 90)}
 
 	// Status
 	switch status {
@@ -348,7 +423,7 @@ func NewMasterRow(name string, status int, uptime, cpuPct, ramPct, ramUsed, ramL
 }
 
 // RenderMaster writes the master overview badge SVG to w.
-func RenderMaster(w io.Writer, title, source string, rows []MasterRow) error {
+func RenderMaster(w io.Writer, title, source string, theme Theme, rows []MasterRow) error {
 	height := masterHeaderH + len(rows)*masterRowH + masterPadBot
 
 	data := MasterData{
@@ -356,6 +431,7 @@ func RenderMaster(w io.Writer, title, source string, rows []MasterRow) error {
 		Source: source,
 		Width:  masterWidth,
 		Height: height,
+		Theme:  theme,
 		Rows:   rows,
 	}
 
@@ -367,11 +443,11 @@ func BuildMasterRowSparklines(row *MasterRow, index int, cpuSeries, ramSeries []
 	rowY := float64(masterHeaderH + index*masterRowH)
 	chartY := rowY + 7
 
-	// CPU sparkline at x=278 (after cpu % text)
-	row.CPUPoints, row.CPUArea = buildMiniSparkline(cpuSeries, 278, chartY, masterChartW, masterChartH)
+	// CPU sparkline at x=296 (after cpu % text)
+	row.CPUPoints, row.CPUArea = buildMiniSparkline(cpuSeries, 296, chartY, masterChartW, masterChartH)
 
-	// RAM sparkline at x=432 (after ram value text)
-	row.RAMPoints, row.RAMArea = buildMiniSparkline(ramSeries, 432, chartY, masterChartW, masterChartH)
+	// RAM sparkline at x=452 (after ram value text)
+	row.RAMPoints, row.RAMArea = buildMiniSparkline(ramSeries, 452, chartY, masterChartW, masterChartH)
 }
 
 // RenderUnknown writes a gray "unknown" badge SVG to w.

@@ -59,3 +59,26 @@ GET /badge/{source}/{name}/sparkline.svg?metric=ram
 ```
 
 `source` is `docker` or `proxmox`. `name` is the container/VM name.
+
+### Master overview
+
+```
+GET /badge/master.svg          # all sources
+GET /badge/{source}/master.svg # one source
+```
+
+A single SVG with every resource: status, uptime, CPU and RAM (with inline sparklines).
+
+### Theming
+
+The master badge is themeable via query params:
+
+```
+GET /badge/master.svg?theme=nord
+GET /badge/master.svg?bg=0d1117&text=c9d1d9&muted=8b949e
+```
+
+- `theme` — preset: `dark` (default), `light`, `dracula`, `nord`, `solarized`, `rosepine`
+- Per-color overrides (3- or 6-digit hex, `#` optional): `bg`, `header`, `rowalt`, `border`, `text`, `muted`
+
+Overrides apply on top of the chosen preset; invalid values are ignored. Status/CPU/RAM colors stay semantic (green/yellow/red by threshold).

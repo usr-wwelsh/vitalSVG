@@ -244,7 +244,7 @@ func (s *Server) handleMasterBadge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	badge.RenderMaster(w, title, displaySource, rows)
+	badge.RenderMaster(w, title, displaySource, badge.ParseTheme(r.URL.Query()), rows)
 }
 
 func (s *Server) handleListResources(w http.ResponseWriter, r *http.Request) {
