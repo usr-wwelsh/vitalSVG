@@ -446,8 +446,8 @@
         for (const [source, names] of Object.entries(groups)) {
           html += `
             <div class="source-group">
-              <h2><span class="dot"></span>${source}</h2>
-              <div class="master-badge-section" data-base="${BASE}/badge/${source}/master.svg" data-label="${source} overview">
+              <h2><span class="dot"></span>${esc(source)}</h2>
+              <div class="master-badge-section" data-base="${esc(`${BASE}/badge/${source}/master.svg`)}" data-label="${esc(`${source} overview`)}">
                 <div class="badge-header">
                   <h3>Overview</h3>
                   <div class="theme-controls">
@@ -456,7 +456,7 @@
                     <button class="copy-btn" onclick="copyMaster(this, 'md')">Copy MD</button>
                   </div>
                 </div>
-                <img src="${themedUrl(`${BASE}/badge/${source}/master.svg`)}" alt="${source} master overview">
+                <img src="${esc(themedUrl(`${BASE}/badge/${source}/master.svg`))}" alt="${esc(`${source} master overview`)}">
               </div>`;
 
           for (const name of names) {
@@ -464,41 +464,43 @@
             html += `
               <div class="resource-card">
                 <div class="resource-header">
-                  <span class="resource-name">${name}</span>
+                  <span class="resource-name">${esc(name)}</span>
                   <button class="toggle-btn" onclick="toggleEndpoints('${id}')">Copy URLs</button>
                 </div>
                 <div class="badges-row">`;
 
             for (const t of BADGE_TYPES) {
-              html += `<img src="${BASE}/badge/${source}/${name}/${t}.svg" alt="${name} ${t}">`;
+              html += `<img src="${esc(`${BASE}/badge/${source}/${name}/${t}.svg`)}" alt="${esc(name)} ${t}">`;
             }
             html += `
-                  <img class="sparkline" src="${BASE}/badge/${source}/${name}/sparkline.svg?metric=cpu" alt="${name} cpu trend">
-                  <img class="sparkline" src="${BASE}/badge/${source}/${name}/sparkline.svg?metric=ram" alt="${name} ram trend">
+                  <img class="sparkline" src="${esc(`${BASE}/badge/${source}/${name}/sparkline.svg?metric=cpu`)}" alt="${esc(name)} cpu trend">
+                  <img class="sparkline" src="${esc(`${BASE}/badge/${source}/${name}/sparkline.svg?metric=ram`)}" alt="${esc(name)} ram trend">
                 </div>
                 <div class="endpoints" id="ep-${id}">`;
 
             // Individual badge URLs
             for (const t of BADGE_TYPES) {
               const url = `${BASE}/badge/${source}/${name}/${t}.svg`;
+              const md = `[![${name} ${t}](${url})](${REPO})`;
               html += `
                   <div class="endpoint-row">
                     <span class="endpoint-label">${t}</span>
-                    <span class="endpoint-url">${url}</span>
-                    <button class="copy-btn" onclick="copyText(this, '${url}')">Copy URL</button>
-                    <button class="copy-btn" onclick="copyText(this, '[![${name} ${t}](${url})](${REPO})')">Copy MD</button>
+                    <span class="endpoint-url">${esc(url)}</span>
+                    <button class="copy-btn" data-copy="${esc(url)}">Copy URL</button>
+                    <button class="copy-btn" data-copy="${esc(md)}">Copy MD</button>
                   </div>`;
             }
 
             // Sparkline URLs
             for (const metric of ['cpu', 'ram']) {
               const url = `${BASE}/badge/${source}/${name}/sparkline.svg?metric=${metric}`;
+              const md = `[![${name} ${metric} trend](${url})](${REPO})`;
               html += `
                   <div class="endpoint-row">
                     <span class="endpoint-label">${metric} trend</span>
-                    <span class="endpoint-url">${url}</span>
-                    <button class="copy-btn" onclick="copyText(this, '${url}')">Copy URL</button>
-                    <button class="copy-btn" onclick="copyText(this, '[![${name} ${metric} trend](${url})](${REPO})')">Copy MD</button>
+                    <span class="endpoint-url">${esc(url)}</span>
+                    <button class="copy-btn" data-copy="${esc(url)}">Copy URL</button>
+                    <button class="copy-btn" data-copy="${esc(md)}">Copy MD</button>
                   </div>`;
             }
 
@@ -511,7 +513,7 @@
             html += `
                   <div class="copy-section">
                     <h4>All badges (Markdown)</h4>
-                    <div class="markdown-snippet" id="md-${id}">${escapeHtml(mdAll)}<button class="copy-btn" onclick="copyText(this, document.getElementById('md-${id}').textContent.replace('Copy', '').trim())">Copy</button></div>
+                    <div class="markdown-snippet" id="md-${id}">${esc(mdAll)}<button class="copy-btn" data-copy="${esc(mdAll)}">Copy</button></div>
                   </div>
                 </div>
               </div>`;
@@ -551,9 +553,18 @@
       });
     }
 
-    function escapeHtml(s) {
-      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Escape for safe interpolation into HTML text and quoted attributes.
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
+
+    // Delegated copy handler: payloads live in data-copy attributes (pure data),
+    // never interpolated into executable code.
+    document.getElementById('content').addEventListener('click', e => {
+      const btn = e.target.closest('[data-copy]');
+      if (btn) copyText(btn, btn.dataset.copy);
+    });
 
     loadResources();
     // Auto-refresh every 60s
