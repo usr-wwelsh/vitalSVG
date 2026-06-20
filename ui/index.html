@@ -233,6 +233,7 @@
     }
 
     .refresh-btn:hover { background: #30363d; }
+    .refresh-btn:disabled { opacity: 0.5; cursor: default; }
 
     .master-badge-section {
       margin-bottom: 1rem;
@@ -350,7 +351,7 @@
 
   <div class="refresh-bar">
     <span id="status">Loading...</span>
-    <button class="refresh-btn" onclick="loadResources()">Refresh</button>
+    <button class="refresh-btn" onclick="refresh()">Refresh</button>
   </div>
 
   <div id="content"></div>
@@ -375,6 +376,30 @@
 
     function themedUrl(base) {
       return selectedTheme ? `${base}?theme=${selectedTheme}` : base;
+    }
+
+    // Manual refresh bumps this nonce so badge images bypass the 30s server
+    // cache; the periodic auto-refresh reuses it (cache expiry handles liveness).
+    let cacheBust = '';
+    function bust(url) {
+      return cacheBust ? url + (url.includes('?') ? '&' : '?') + '_=' + cacheBust : url;
+    }
+
+    // Client-side debounce: a human can't out-click the 2s cooldown, so the
+    // server limiter only ever fires for scripted hammering.
+    let refreshCooldown = false;
+    function refresh() {
+      if (refreshCooldown) return;
+      refreshCooldown = true;
+      const btn = document.querySelector('.refresh-btn');
+      if (btn) btn.disabled = true;
+      setTimeout(() => {
+        refreshCooldown = false;
+        if (btn) btn.disabled = false;
+      }, 2000);
+      cacheBust = Date.now();
+      document.getElementById('status').textContent = 'Refreshing…';
+      loadResources();
     }
 
     function themeSelect() {
@@ -439,7 +464,7 @@
                   <button class="copy-btn" onclick="copyMaster(this, 'md')">Copy MD</button>
                 </div>
               </div>
-              <img src="${themedUrl(`${BASE}/badge/master.svg`)}" alt="master overview">
+              <img src="${bust(themedUrl(`${BASE}/badge/master.svg`))}" alt="master overview">
               <div class="theme-hint">Pick a theme, or add custom colors: <code>?bg=0d1117&amp;text=c9d1d9</code> — see the README.</div>
             </div>`;
         }
@@ -456,7 +481,7 @@
                     <button class="copy-btn" onclick="copyMaster(this, 'md')">Copy MD</button>
                   </div>
                 </div>
-                <img src="${esc(themedUrl(`${BASE}/badge/${source}/master.svg`))}" alt="${esc(`${source} master overview`)}">
+                <img src="${esc(bust(themedUrl(`${BASE}/badge/${source}/master.svg`)))}" alt="${esc(`${source} master overview`)}">
               </div>`;
 
           for (const name of names) {
@@ -470,11 +495,11 @@
                 <div class="badges-row">`;
 
             for (const t of BADGE_TYPES) {
-              html += `<img src="${esc(`${BASE}/badge/${source}/${name}/${t}.svg`)}" alt="${esc(name)} ${t}">`;
+              html += `<img src="${esc(bust(`${BASE}/badge/${source}/${name}/${t}.svg`))}" alt="${esc(name)} ${t}">`;
             }
             html += `
-                  <img class="sparkline" src="${esc(`${BASE}/badge/${source}/${name}/sparkline.svg?metric=cpu`)}" alt="${esc(name)} cpu trend">
-                  <img class="sparkline" src="${esc(`${BASE}/badge/${source}/${name}/sparkline.svg?metric=ram`)}" alt="${esc(name)} ram trend">
+                  <img class="sparkline" src="${esc(bust(`${BASE}/badge/${source}/${name}/sparkline.svg?metric=cpu`))}" alt="${esc(name)} cpu trend">
+                  <img class="sparkline" src="${esc(bust(`${BASE}/badge/${source}/${name}/sparkline.svg?metric=ram`))}" alt="${esc(name)} ram trend">
                 </div>
                 <div class="endpoints" id="ep-${id}">`;
 
