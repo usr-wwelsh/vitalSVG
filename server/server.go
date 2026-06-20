@@ -14,12 +14,13 @@ import (
 )
 
 type Server struct {
-	store *store.Store
-	mux   *http.ServeMux
+	store   *store.Store
+	mux     *http.ServeMux
+	limiter *rateLimiter
 }
 
 func New(s *store.Store) *Server {
-	srv := &Server{store: s, mux: http.NewServeMux()}
+	srv := &Server{store: s, mux: http.NewServeMux(), limiter: newRateLimiter(rlRate, rlBurst)}
 	srv.mux.HandleFunc("GET /badge/{source}/{name}/{badgeType}", srv.handleBadge)
 	srv.mux.HandleFunc("GET /badge/{source}/master.svg", srv.handleMasterBadge)
 	srv.mux.HandleFunc("GET /badge/master.svg", srv.handleMasterBadge)
@@ -31,6 +32,12 @@ func New(s *store.Store) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Health checks (the uptime monitor) must never be throttled.
+	if r.URL.Path != "/health" && !s.limiter.allow(clientIP(r)) {
+		w.Header().Set("Retry-After", "5")
+		http.Error(w, "🐌 slow down buddy — too many requests", http.StatusTooManyRequests)
+		return
+	}
 	s.mux.ServeHTTP(w, r)
 }
 

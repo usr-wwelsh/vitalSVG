@@ -432,6 +432,16 @@
 
       try {
         const resp = await fetch(`${BASE}/api/resources`);
+        if (resp.status === 429) {
+          contentEl.innerHTML = `
+            <div class="empty">
+              <p style="font-size:2.5rem;margin-bottom:0.5rem;">🐌</p>
+              <p>Slow down, buddy — too many requests.</p>
+              <p>Catch your breath and try again in a few seconds.</p>
+            </div>`;
+          statusEl.textContent = 'Rate limited';
+          return;
+        }
         const resources = await resp.json();
 
         if (!resources || resources.length === 0) {
