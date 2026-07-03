@@ -1,3 +1,5 @@
+<img src="ui/logo.svg" width="64" height="64" alt="">
+
 # VitalSVG
 
 Live SVG badges for your infrastructure. Like github-readme-stats, but for your actual servers.
