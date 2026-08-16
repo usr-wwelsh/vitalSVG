@@ -1,3 +1,5 @@
+[![Read about the commits](https://img.shields.io/badge/commits-code%20blog-1a1a1a?style=flat-square)](https://wwel.sh/digest.html?repo=vitalSVG)
+
 <img src="ui/logo.svg" width="64" height="64" alt="" align="left">
 
 # VitalSVG
